@@ -1,4 +1,7 @@
 package com.aryan.featureflags.service;
 
-public class FeatureService {
+import com.aryan.featureflags.dto.FeatureResponseDto;
+
+public interface FeatureService {
+    public String updateFeature(String key, boolean enabled);
 }

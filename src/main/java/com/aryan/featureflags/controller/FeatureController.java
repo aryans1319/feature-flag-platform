@@ -28,4 +28,11 @@ public class FeatureController {
 
         return ResponseEntity.ok(result);
     }
+
+    @GetMapping("/{key}/evaluate")
+    public ResponseEntity<Boolean> evaluateFeature(@PathVariable String key) {
+        boolean enabled = featureService.evaluateFeature(key);
+        return ResponseEntity.ok(enabled);
+    }
+
 }

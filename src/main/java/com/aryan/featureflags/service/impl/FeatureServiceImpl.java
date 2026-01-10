@@ -1,5 +1,6 @@
 package com.aryan.featureflags.service.impl;
 
+import com.aryan.featureflags.exception.FeatureNotFoundException;
 import com.aryan.featureflags.model.Feature;
 import com.aryan.featureflags.service.FeatureService;
 import org.springframework.stereotype.Service;
@@ -28,14 +29,20 @@ public class FeatureServiceImpl implements FeatureService {
 
     @Override
     public String updateFeature(String key, boolean enabled) {
-
         Feature feature = store.get(key);
-
         if (feature == null) {
             return "Feature not found: " + key;
         }
-
         feature.setEnabled(enabled);
         return "Feature updated successfully";
+    }
+
+    @Override
+    public boolean evaluateFeature(String key){
+        Feature feature = store.get(key);
+        if (feature == null) {
+            throw new FeatureNotFoundException("Feature not found: " + key);
+        }
+        return feature.isEnabled();
     }
 }

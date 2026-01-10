@@ -1,5 +1,7 @@
 package com.aryan.featureflags.service.impl;
 
+import com.aryan.featureflags.dto.FeatureRequestDto;
+import com.aryan.featureflags.dto.FeatureResponseDto;
 import com.aryan.featureflags.exception.FeatureNotFoundException;
 import com.aryan.featureflags.model.Feature;
 import com.aryan.featureflags.service.FeatureService;
@@ -36,6 +38,27 @@ public class FeatureServiceImpl implements FeatureService {
         feature.setEnabled(enabled);
         return "Feature updated successfully";
     }
+    public String createFeature(FeatureRequestDto request){
+        String key= request.getKey();
+        if(store.containsKey(key)){
+            return "Feature already exists: " + key;
+
+        }
+        Feature feature= new Feature(key, request.isEnabled());
+        store.put(key, feature);
+        return "Feature created successfully";
+
+    }
+    public FeatureResponseDto evaluateFeature(String key){
+        Feature feature = store.get(key);
+        if(feature==null){
+            throw new FeatureNotFoundException("Feature not found: " + key);
+        }
+
+        return new FeatureResponseDto(feature.getKey(), feature.isEnabled());
+
+    }
+
 
     @Override
     public boolean evaluateFeature(String key){

@@ -8,5 +8,6 @@ public interface FeatureService {
     public String createFeature(FeatureRequestDto request);
     FeatureResponseDto evaluateFeature(String key);
 
+    public boolean evaluateFeature(String key);
 
 }

@@ -43,6 +43,11 @@ public class FeatureController {
         FeatureResponseDto response= featureService.evaluateFeature(key);
         return ResponseEntity.ok(response);
 
+
+    @GetMapping("/{key}/evaluate")
+    public ResponseEntity<Boolean> evaluateFeature(@PathVariable String key) {
+        boolean enabled = featureService.evaluateFeature(key);
+        return ResponseEntity.ok(enabled);
     }
 
 }

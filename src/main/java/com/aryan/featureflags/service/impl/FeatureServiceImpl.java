@@ -31,13 +31,10 @@ public class FeatureServiceImpl implements FeatureService {
 
     @Override
     public String updateFeature(String key, boolean enabled) {
-
         Feature feature = store.get(key);
-
         if (feature == null) {
             return "Feature not found: " + key;
         }
-
         feature.setEnabled(enabled);
         return "Feature updated successfully";
     }
@@ -62,4 +59,13 @@ public class FeatureServiceImpl implements FeatureService {
 
     }
 
+
+    @Override
+    public boolean evaluateFeature(String key){
+        Feature feature = store.get(key);
+        if (feature == null) {
+            throw new FeatureNotFoundException("Feature not found: " + key);
+        }
+        return feature.isEnabled();
+    }
 }

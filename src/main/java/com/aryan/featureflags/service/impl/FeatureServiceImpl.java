@@ -30,35 +30,37 @@ public class FeatureServiceImpl implements FeatureService {
     }
 
     @Override
-    public String updateFeature(String key, boolean enabled) {
+    public FeatureResponseDto updateFeature(String key, boolean enabled) {
         Feature feature = store.get(key);
+
         if (feature == null) {
-            return "Feature not found: " + key;
+            throw new FeatureNotFoundException("Feature not found: " + key);
         }
+
         feature.setEnabled(enabled);
-        return "Feature updated successfully";
-    }
-    public String createFeature(FeatureRequestDto request){
-        String key= request.getKey();
-        if(store.containsKey(key)){
-            return "Feature already exists: " + key;
 
+        return new FeatureResponseDto(feature.getKey(), feature.isEnabled());
+    }
+    @Override
+    public FeatureResponseDto createFeature(FeatureRequestDto request) {
+        String key = request.getKey();
+
+        if (store.containsKey(key)) {
+            throw new IllegalStateException("Feature already exists: " + key);
+            // later we’ll replace this with FeatureAlreadyExistsException
         }
-        Feature feature= new Feature(key, request.isEnabled());
+        Feature feature = new Feature(key, request.isEnabled());
         store.put(key, feature);
-        return "Feature created successfully";
-
+        return new FeatureResponseDto(feature.getKey(), feature.isEnabled());
     }
-    public FeatureResponseDto evaluateFeature(String key){
+
+    public FeatureResponseDto getFeature(String key){
         Feature feature = store.get(key);
         if(feature==null){
             throw new FeatureNotFoundException("Feature not found: " + key);
         }
-
         return new FeatureResponseDto(feature.getKey(), feature.isEnabled());
-
     }
-
 
     @Override
     public boolean evaluateFeature(String key){

@@ -4,10 +4,8 @@ import com.aryan.featureflags.dto.FeatureRequestDto;
 import com.aryan.featureflags.dto.FeatureResponseDto;
 
 public interface FeatureService {
-    public String updateFeature(String key, boolean enabled);
-    public String createFeature(FeatureRequestDto request);
-    FeatureResponseDto evaluateFeature(String key);
-
+    FeatureResponseDto updateFeature(String key, boolean enabled);
+    FeatureResponseDto createFeature(FeatureRequestDto request);
+    FeatureResponseDto getFeature(String key);
     public boolean evaluateFeature(String key);
-
 }

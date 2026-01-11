@@ -17,37 +17,36 @@ public class FeatureController {
         this.featureService = featureService;
     }
 
+    // UPDATE
     @PutMapping("/{key}")
-    public ResponseEntity<String> updateFeature(
+    public ResponseEntity<FeatureResponseDto> updateFeature(
             @PathVariable String key,
             @RequestBody UpdateFeatureRequestDto request) {
-
-        String result = featureService.updateFeature(key, request.isEnabled());
-
-        if (result.startsWith("Feature not found")) {
-            return ResponseEntity.status(404).body(result);
-        }
-
-        return ResponseEntity.ok(result);
-    }
-    @PostMapping
-    public ResponseEntity<String> createFeature(@RequestBody FeatureRequestDto request){
-        String result= featureService.createFeature(request);
-        if (result.startsWith("Feature already exists")) {
-            return ResponseEntity.badRequest().body(result);
-        }
-        return ResponseEntity.ok(result);
-    }
-    @GetMapping("/{key}")
-    public ResponseEntity<FeatureResponseDto> evaluateFeature( @PathVariable String key){
-        FeatureResponseDto response= featureService.evaluateFeature(key);
+        FeatureResponseDto response = featureService.updateFeature(key, request.isEnabled());
         return ResponseEntity.ok(response);
+    }
 
 
+    // CREATE
+    @PostMapping
+    public ResponseEntity<FeatureResponseDto> createFeature(
+            @RequestBody FeatureRequestDto request) {
+
+        FeatureResponseDto response = featureService.createFeature(request);
+        return ResponseEntity.status(201).body(response);
+    }
+
+    // GET (configuration)
+    @GetMapping("/{key}")
+    public ResponseEntity<FeatureResponseDto> getFeature(@PathVariable String key) {
+        FeatureResponseDto response = featureService.getFeature(key);
+        return ResponseEntity.ok(response);
+    }
+
+    // EVALUATE (decision)
     @GetMapping("/{key}/evaluate")
     public ResponseEntity<Boolean> evaluateFeature(@PathVariable String key) {
         boolean enabled = featureService.evaluateFeature(key);
         return ResponseEntity.ok(enabled);
     }
-
 }

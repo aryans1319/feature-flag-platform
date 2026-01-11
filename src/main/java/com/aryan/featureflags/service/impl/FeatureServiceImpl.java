@@ -2,8 +2,10 @@ package com.aryan.featureflags.service.impl;
 
 import com.aryan.featureflags.dto.FeatureRequestDto;
 import com.aryan.featureflags.dto.FeatureResponseDto;
+import com.aryan.featureflags.exception.FeatureAlreadyExistsException;
 import com.aryan.featureflags.exception.FeatureNotFoundException;
 import com.aryan.featureflags.model.Feature;
+import com.aryan.featureflags.repository.FeatureRepository;
 import com.aryan.featureflags.service.FeatureService;
 import org.springframework.stereotype.Service;
 
@@ -16,15 +18,20 @@ public class FeatureServiceImpl implements FeatureService {
     /**
      * SHARED IN-MEMORY STORE
      * This will be reused when CREATE is added
+     *
+     *
      */
     private final Map<String, Feature> store = new ConcurrentHashMap<>();
+
+    private final FeatureRepository featureRepository;
 
     /**
      * TEMP SEED DATA
      * Allows UPDATE to be tested before CREATE exists
      * Remove after create API is created
      */
-    public FeatureServiceImpl() {
+    public FeatureServiceImpl(FeatureRepository featureRepository) {
+        this.featureRepository = featureRepository;
         store.put("NEW_CHECKOUT", new Feature("NEW_CHECKOUT", false));
         store.put("TEST_UPDATE", new Feature("TEST_UPDATE", false));
     }
@@ -45,13 +52,25 @@ public class FeatureServiceImpl implements FeatureService {
     public FeatureResponseDto createFeature(FeatureRequestDto request) {
         String key = request.getKey();
 
-        if (store.containsKey(key)) {
-            throw new IllegalStateException("Feature already exists: " + key);
-            // later we’ll replace this with FeatureAlreadyExistsException
-        }
-        Feature feature = new Feature(key, request.isEnabled());
-        store.put(key, feature);
-        return new FeatureResponseDto(feature.getKey(), feature.isEnabled());
+        featureRepository.findByKey(key)
+                .ifPresent(feature -> {
+                    throw new FeatureAlreadyExistsException(
+                            "Feature already exists: " + key
+                    );
+                });
+
+        Feature feature = new Feature(
+                request.getKey(),
+
+                request.isEnabled()
+        );
+
+        Feature savedFeature = featureRepository.save(feature);
+
+        return new FeatureResponseDto(
+                savedFeature.getKey(),
+                savedFeature.isEnabled()
+        );
     }
 
     public FeatureResponseDto getFeature(String key){

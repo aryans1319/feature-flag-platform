@@ -22,10 +22,12 @@ public class FeatureController {
     public ResponseEntity<FeatureResponseDto> updateFeature(
             @PathVariable String key,
             @RequestBody UpdateFeatureRequestDto request) {
-        FeatureResponseDto response = featureService.updateFeature(key, request.isEnabled());
+
+        FeatureResponseDto response =
+                featureService.updateFeature(key, request);
+
         return ResponseEntity.ok(response);
     }
-
 
     // CREATE
     @PostMapping

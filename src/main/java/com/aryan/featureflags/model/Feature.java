@@ -1,12 +1,15 @@
 package com.aryan.featureflags.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
+import java.time.Instant;
 
 @Entity
-@Table(name = "features")
+@Table(name = "features",
+        uniqueConstraints = {
+            @UniqueConstraint(columnNames = {"key", "environment"})
+        }
+)
 public class Feature {
 
     @Id
@@ -15,18 +18,42 @@ public class Feature {
 
     @Column(name = "enabled", nullable = false)
     private boolean enabled;
+    @Column( name= "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+    @Column( name= "updated_at", nullable = false)
+    private Instant updatedAt;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Environment environment; // dev / staging / prod
+
 
     // Required by JPA
     protected Feature() {
     }
 
-    public Feature(String key, boolean enabled) {
+    @PrePersist
+    public void OnCreate(){
+        Instant now= Instant.now();
+        this.createdAt= now;
+        this.updatedAt= now;
+    }
+    @PreUpdate
+    public void onUpdate(){
+        this.updatedAt= Instant.now();
+    }
+
+    public Feature(String key,Environment environment, boolean enabled) {
         this.key = key;
+        this.environment= environment;
         this.enabled = enabled;
     }
 
     public String getKey() {
         return key;
+    }
+
+    public Environment getEnvironment() {
+        return environment;
     }
 
     public boolean isEnabled() {

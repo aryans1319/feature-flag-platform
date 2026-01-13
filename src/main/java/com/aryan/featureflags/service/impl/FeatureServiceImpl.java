@@ -5,6 +5,7 @@ import com.aryan.featureflags.dto.FeatureResponseDto;
 import com.aryan.featureflags.dto.UpdateFeatureRequestDto;
 import com.aryan.featureflags.exception.FeatureAlreadyExistsException;
 import com.aryan.featureflags.exception.FeatureNotFoundException;
+import com.aryan.featureflags.model.Environment;
 import com.aryan.featureflags.model.Feature;
 import com.aryan.featureflags.repository.FeatureRepository;
 import com.aryan.featureflags.service.FeatureService;
@@ -21,30 +22,30 @@ public class FeatureServiceImpl implements FeatureService {
     }
 
     @Override
-    public FeatureResponseDto updateFeature(String key, UpdateFeatureRequestDto request) {
-        Feature feature = featureRepository.findById(key)
+    public FeatureResponseDto updateFeature(String key, Environment environment, UpdateFeatureRequestDto request) {
+        Feature feature = featureRepository.findByKeyAndEnvironment(key, environment)
                 .orElseThrow(() ->
-                        new FeatureNotFoundException("Feature not found: " + key)
+                        new FeatureNotFoundException("Feature not found: " + key + "for env: "+ environment)
                 );
         feature.setEnabled(request.isEnabled());
         Feature updated = featureRepository.save(feature);
-        return new FeatureResponseDto(updated.getKey(), updated.isEnabled());
+        return new FeatureResponseDto(updated.getKey(),  updated.getEnvironment(),updated.isEnabled());
     }
 
     @Override
     public FeatureResponseDto createFeature(FeatureRequestDto request) {
         String key = request.getKey();
 
-        featureRepository.findByKey(key)
+        featureRepository.findByKeyAndEnvironment(key, request.getEnvironment())
                 .ifPresent(feature -> {
                     throw new FeatureAlreadyExistsException(
-                            "Feature already exists: " + key
+                            "Feature already exists for env: " + request.getEnvironment()
                     );
                 });
 
         Feature feature = new Feature(
                 request.getKey(),
-
+                request.getEnvironment(),
                 request.isEnabled()
         );
 
@@ -52,25 +53,26 @@ public class FeatureServiceImpl implements FeatureService {
 
         return new FeatureResponseDto(
                 savedFeature.getKey(),
+                savedFeature.getEnvironment(),
                 savedFeature.isEnabled()
         );
     }
 
     @Override
-    public FeatureResponseDto getFeature(String key) {
+    public FeatureResponseDto getFeature(String key, Environment environment) {
 
-        Feature feature = featureRepository.findById(key)
+        Feature feature = featureRepository.findByKeyAndEnvironment(key, environment)
                 .orElseThrow(() ->
-                        new FeatureNotFoundException("Feature not found: " + key)
+                        new FeatureNotFoundException("Feature not found: " + key + "for env: "+ environment)
                 );
 
-        return new FeatureResponseDto(feature.getKey(), feature.isEnabled());
+        return new FeatureResponseDto(feature.getKey(), feature.getEnvironment(), feature.isEnabled());
     }
 
     @Override
-    public boolean evaluateFeature(String key) {
+    public boolean evaluateFeature(String key, Environment environment) {
 
-        Feature feature = featureRepository.findById(key)
+        Feature feature = featureRepository.findByKeyAndEnvironment(key,environment)
                 .orElseThrow(() ->
                         new FeatureNotFoundException("Feature not found: " + key)
                 );

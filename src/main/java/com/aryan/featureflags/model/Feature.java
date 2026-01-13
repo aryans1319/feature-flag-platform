@@ -22,8 +22,9 @@ public class Feature {
     private Instant createdAt;
     @Column( name= "updated_at", nullable = false)
     private Instant updatedAt;
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String environment; // dev / staging / prod
+    private Environment environment; // dev / staging / prod
 
 
     // Required by JPA
@@ -41,7 +42,7 @@ public class Feature {
         this.updatedAt= Instant.now();
     }
 
-    public Feature(String key,String environment, boolean enabled) {
+    public Feature(String key,Environment environment, boolean enabled) {
         this.key = key;
         this.environment= environment;
         this.enabled = enabled;
@@ -51,7 +52,7 @@ public class Feature {
         return key;
     }
 
-    public String getEnvironment() {
+    public Environment getEnvironment() {
         return environment;
     }
 

@@ -5,6 +5,7 @@ import com.aryan.featureflags.dto.FeatureResponseDto;
 import com.aryan.featureflags.dto.UpdateFeatureRequestDto;
 import com.aryan.featureflags.exception.FeatureAlreadyExistsException;
 import com.aryan.featureflags.exception.FeatureNotFoundException;
+import com.aryan.featureflags.model.Environment;
 import com.aryan.featureflags.model.Feature;
 import com.aryan.featureflags.repository.FeatureRepository;
 import com.aryan.featureflags.service.FeatureService;
@@ -21,7 +22,7 @@ public class FeatureServiceImpl implements FeatureService {
     }
 
     @Override
-    public FeatureResponseDto updateFeature(String key,String environment, UpdateFeatureRequestDto request) {
+    public FeatureResponseDto updateFeature(String key, Environment environment, UpdateFeatureRequestDto request) {
         Feature feature = featureRepository.findByKeyAndEnvironment(key, environment)
                 .orElseThrow(() ->
                         new FeatureNotFoundException("Feature not found: " + key + "for env: "+ environment)
@@ -58,7 +59,7 @@ public class FeatureServiceImpl implements FeatureService {
     }
 
     @Override
-    public FeatureResponseDto getFeature(String key, String environment) {
+    public FeatureResponseDto getFeature(String key, Environment environment) {
 
         Feature feature = featureRepository.findByKeyAndEnvironment(key, environment)
                 .orElseThrow(() ->
@@ -69,7 +70,7 @@ public class FeatureServiceImpl implements FeatureService {
     }
 
     @Override
-    public boolean evaluateFeature(String key, String environment) {
+    public boolean evaluateFeature(String key, Environment environment) {
 
         Feature feature = featureRepository.findByKeyAndEnvironment(key,environment)
                 .orElseThrow(() ->

@@ -4,9 +4,16 @@ public class FeatureResponseDto {
     private final String key;
     private final boolean enabled;
 
-    public FeatureResponseDto(String key, boolean enabled) {
+    private String environment;
+
+    public FeatureResponseDto(String key, String environment, boolean enabled) {
         this.key = key;
+        this.environment= environment;
         this.enabled = enabled;
+    }
+
+    public String getEnvironment() {
+        return environment;
     }
 
     public String getKey() {

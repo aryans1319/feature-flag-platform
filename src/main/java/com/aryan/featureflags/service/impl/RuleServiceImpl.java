@@ -1,0 +1,59 @@
+package com.aryan.featureflags.service.impl;
+
+import com.aryan.featureflags.dto.RuleRequestDto;
+import com.aryan.featureflags.dto.RuleResponseDto;
+import com.aryan.featureflags.exception.FeatureNotFoundException;
+import com.aryan.featureflags.model.Environment;
+import com.aryan.featureflags.model.Feature;
+import com.aryan.featureflags.model.Rule;
+import com.aryan.featureflags.repository.FeatureRepository;
+import com.aryan.featureflags.repository.RuleRepository;
+import com.aryan.featureflags.service.RuleService;
+import org.springframework.stereotype.Service;
+
+@Service
+public class RuleServiceImpl implements RuleService {
+
+    private final FeatureRepository featureRepository;
+    private final RuleRepository ruleRepository;
+
+    public RuleServiceImpl(
+            FeatureRepository featureRepository,
+            RuleRepository ruleRepository) {
+        this.featureRepository = featureRepository;
+        this.ruleRepository = ruleRepository;
+    }
+
+    @Override
+    public RuleResponseDto createRule(
+            String featureKey,
+            Environment environment,
+            RuleRequestDto request) {
+
+        Feature feature = featureRepository
+                .findByKeyAndEnvironment(featureKey, environment)
+                .orElseThrow(() ->
+                        new FeatureNotFoundException(
+                                "Feature not found: " + featureKey +
+                                        " for env: " + environment
+                        ));
+
+        Rule rule = new Rule();
+        rule.setFeature(feature);
+        rule.setAttribute(request.getAttribute());
+        rule.setOperator(request.getOperator());
+        rule.setValue(request.getValue());
+
+        Rule savedRule = ruleRepository.save(rule);
+
+        return new RuleResponseDto(
+                savedRule.getId(),
+                feature.getKey(),
+                feature.getEnvironment(),
+                savedRule.getAttribute(),
+                savedRule.getOperator(),
+                savedRule.getValue(),
+                savedRule.getCreatedAt()
+        );
+    }
+}

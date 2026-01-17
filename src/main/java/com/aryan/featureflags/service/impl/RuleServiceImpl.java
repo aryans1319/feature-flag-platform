@@ -11,6 +11,8 @@ import com.aryan.featureflags.repository.RuleRepository;
 import com.aryan.featureflags.service.RuleService;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class RuleServiceImpl implements RuleService {
 
@@ -55,5 +57,28 @@ public class RuleServiceImpl implements RuleService {
                 savedRule.getValue(),
                 savedRule.getCreatedAt()
         );
+    }
+    public List<RuleResponseDto> listRules(String featureKey, Environment environment){
+        Feature feature= featureRepository.findByKeyAndEnvironment(featureKey, environment)
+                .orElseThrow(()->
+                        new FeatureNotFoundException(
+                                "Feature not found" + featureKey+ "for env: " + environment
+                        )
+
+                        );
+           List<Rule> rules= ruleRepository.findByFeature(feature);
+           return rules.stream()
+                   .map(rule -> new RuleResponseDto(
+                           rule.getId(),
+                           feature.getKey(),
+                           feature.getEnvironment(),
+                           rule.getAttribute(),
+                           rule.getOperator(),
+                           rule.getValue(),
+                           rule.getCreatedAt()
+
+
+                   )).toList();
+
     }
 }

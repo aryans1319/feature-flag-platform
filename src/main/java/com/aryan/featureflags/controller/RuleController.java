@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/features")
 public class RuleController {
@@ -32,5 +34,15 @@ public class RuleController {
                 .status(HttpStatus.CREATED)
                 .body(response);
     }
+    @GetMapping("/{key}/rules")
+    public ResponseEntity<List<RuleResponseDto>> listRules(
+            @PathVariable String key,
+            @RequestParam Environment env
+    ){
+        List<RuleResponseDto> rules= ruleService.listRules(key, env);
+        return ResponseEntity.ok(rules);
+
+    }
+
 
 }

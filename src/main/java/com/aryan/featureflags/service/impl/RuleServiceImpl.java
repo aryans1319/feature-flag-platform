@@ -9,6 +9,7 @@ import com.aryan.featureflags.model.Rule;
 import com.aryan.featureflags.repository.FeatureRepository;
 import com.aryan.featureflags.repository.RuleRepository;
 import com.aryan.featureflags.service.RuleService;
+import org.hibernate.generator.values.internal.GeneratedValuesImpl;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -80,5 +81,28 @@ public class RuleServiceImpl implements RuleService {
 
                    )).toList();
 
+    }
+
+    public void deleteRule(String featureKey, Environment env, Long ruleId){
+//Finding feature
+        Feature feature= featureRepository.findByKeyAndEnvironment(featureKey, env)
+                .orElseThrow(()->
+                        new FeatureNotFoundException(
+                                "Feature not found: " + featureKey +
+                                        " for env: " + env
+                        ));
+//        Finding Rule
+        Rule rule= ruleRepository.findById(ruleId)
+                .orElseThrow(()->
+                        new FeatureNotFoundException(
+                                "Rule not found: " + ruleId
+
+                        ));
+        if(!rule.getFeature().getId().equals(feature.getId())){
+            throw new FeatureNotFoundException(
+                    "Rule doesnt belong to feature: " + featureKey
+            );
+        }
+        ruleRepository.delete(rule);
     }
 }

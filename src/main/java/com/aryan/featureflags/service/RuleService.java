@@ -13,6 +13,8 @@ public interface RuleService {
             Environment environment,
             RuleRequestDto request);
     List<RuleResponseDto> listRules(String featureKey, Environment env);
+    void deleteRule(String featureKey, Environment environment, Long ruleId);
+
 
 
 }

@@ -43,6 +43,16 @@ public class RuleController {
         return ResponseEntity.ok(rules);
 
     }
+    @DeleteMapping("/{key}/rules/{ruleId}")
+    public ResponseEntity<Void> deleteRule(@PathVariable String key,
+                                           @PathVariable Long ruleId,
+                                           @RequestParam Environment env
+                                           ){
+        ruleService.deleteRule(key,env, ruleId);
+        return ResponseEntity.noContent().build();
+
+
+    }
 
 
 }

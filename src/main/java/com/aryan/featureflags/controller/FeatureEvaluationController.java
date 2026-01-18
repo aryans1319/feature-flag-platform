@@ -1,6 +1,7 @@
 package com.aryan.featureflags.controller;
 
 import com.aryan.featureflags.dto.EvaluationContextDto;
+import com.aryan.featureflags.engine.RolloutEvaluator;
 import com.aryan.featureflags.model.Environment;
 import com.aryan.featureflags.service.FeatureEvaluationService;
 import org.springframework.http.ResponseEntity;
@@ -11,10 +12,12 @@ import org.springframework.web.bind.annotation.*;
 public class FeatureEvaluationController {
 
     private final FeatureEvaluationService evaluationService;
+    private final RolloutEvaluator rolloutEvaluator;
 
     public FeatureEvaluationController(
-            FeatureEvaluationService evaluationService) {
+            FeatureEvaluationService evaluationService, RolloutEvaluator rolloutEvaluator) {
         this.evaluationService = evaluationService;
+        this.rolloutEvaluator = rolloutEvaluator;
     }
 
     @PostMapping("/{key}/evaluate")

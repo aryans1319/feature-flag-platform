@@ -27,6 +27,9 @@ public class Feature {
     @Column(name = "enabled", nullable = false)
     private boolean enabled;
 
+    @Column(name = "rollout_percentage")
+    private Integer rolloutPercentage;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -81,6 +84,14 @@ public class Feature {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public Integer getRolloutPercentage() {
+        return rolloutPercentage;
+    }
+
+    public void setRolloutPercentage(Integer rolloutPercentage) {
+        this.rolloutPercentage = rolloutPercentage;
     }
 
     public Instant getCreatedAt() {

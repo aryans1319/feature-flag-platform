@@ -1,6 +1,8 @@
 package com.aryan.featureflags.service.impl;
 
 import com.aryan.featureflags.dto.EvaluationContextDto;
+import com.aryan.featureflags.dto.FeatureResponseDto;
+import com.aryan.featureflags.dto.UpdateRolloutRequestDto;
 import com.aryan.featureflags.engine.RuleEvaluator;
 import com.aryan.featureflags.engine.RolloutEvaluator;
 import com.aryan.featureflags.exception.FeatureNotFoundException;
@@ -92,5 +94,19 @@ public class FeatureEvaluationServiceImpl
         }
 
         return false;
+    }
+
+    @Override
+    public FeatureResponseDto updateRolloutPercentage(String key, Environment environment, UpdateRolloutRequestDto request) {
+        Feature feature= featureRepository.findByKeyAndEnvironment(key, environment).orElseThrow(()->
+                new FeatureNotFoundException(
+                        "Feature not found" + key+ "for env: " + environment
+                ));
+
+        feature.setRolloutPercentage(request.getRollOutPercentage());
+        Feature saved= featureRepository.save(feature);
+
+
+        return null;
     }
 }

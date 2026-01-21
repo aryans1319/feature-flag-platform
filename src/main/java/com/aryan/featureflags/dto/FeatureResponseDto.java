@@ -6,12 +6,17 @@ public class FeatureResponseDto {
     private final String key;
     private final boolean enabled;
 
+
+
+
+    private Integer rollOutPercentage;
     private Environment environment;
 
-    public FeatureResponseDto(String key, Environment environment, boolean enabled) {
+    public FeatureResponseDto(String key, Environment environment, boolean enabled, Integer rollOutPercentage) {
         this.key = key;
         this.environment= environment;
         this.enabled = enabled;
+        this.rollOutPercentage= rollOutPercentage;
     }
 
     public Environment getEnvironment() {
@@ -24,5 +29,8 @@ public class FeatureResponseDto {
 
     public boolean isEnabled() {
         return enabled;
+    }
+    public Integer getRollOutPercentage() {
+        return rollOutPercentage;
     }
 }

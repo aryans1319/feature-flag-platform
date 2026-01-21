@@ -29,7 +29,7 @@ public class FeatureServiceImpl implements FeatureService {
                 );
         feature.setEnabled(request.isEnabled());
         Feature updated = featureRepository.save(feature);
-        return new FeatureResponseDto(updated.getKey(),  updated.getEnvironment(),updated.isEnabled());
+        return new FeatureResponseDto(updated.getKey(),  updated.getEnvironment(),updated.isEnabled(),  updated.getRolloutPercentage());
     }
 
     @Override
@@ -54,7 +54,8 @@ public class FeatureServiceImpl implements FeatureService {
         return new FeatureResponseDto(
                 savedFeature.getKey(),
                 savedFeature.getEnvironment(),
-                savedFeature.isEnabled()
+                savedFeature.isEnabled(),
+                savedFeature.getRolloutPercentage()
         );
     }
 
@@ -66,7 +67,7 @@ public class FeatureServiceImpl implements FeatureService {
                         new FeatureNotFoundException("Feature not found: " + key + "for env: "+ environment)
                 );
 
-        return new FeatureResponseDto(feature.getKey(), feature.getEnvironment(), feature.isEnabled());
+        return new FeatureResponseDto(feature.getKey(), feature.getEnvironment(), feature.isEnabled(), feature.getRolloutPercentage());
     }
 
     @Override

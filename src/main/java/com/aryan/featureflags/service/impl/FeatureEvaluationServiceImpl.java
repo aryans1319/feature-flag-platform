@@ -24,7 +24,6 @@ public class FeatureEvaluationServiceImpl implements FeatureEvaluationService {
 
     private static final Logger log =
             LoggerFactory.getLogger(FeatureEvaluationServiceImpl.class);
-
     private final FeatureRepository featureRepository;
     private final RuleRepository ruleRepository;
     private final RuleEvaluator ruleEvaluator;

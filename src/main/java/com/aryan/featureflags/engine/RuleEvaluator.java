@@ -17,28 +17,27 @@ public class RuleEvaluator {
             return false;
         }
 
-        // Fetch the value from request for this rule’s attribute
-        Object actualValue = context.get(rule.getAttribute());
-        if (actualValue == null) {
+        Object actualValueObj = context.get(rule.getAttribute());
+        if (actualValueObj == null) {
             return false;
         }
 
-        // Compare based on operator
+        String actualValue = actualValueObj.toString().trim();
+        String ruleValue = rule.getValue().trim();
+
         switch (rule.getOperator()) {
 
             case EQUALS:
-                return actualValue.toString()
-                        .equalsIgnoreCase(rule.getValue());
+                return actualValue.equalsIgnoreCase(ruleValue);
 
             case IN:
                 List<String> allowedValues =
-                        Arrays.stream(rule.getValue().split(","))
+                        Arrays.stream(ruleValue.split(","))
                                 .map(String::trim)
                                 .toList();
 
-                return allowedValues.contains(
-                        actualValue.toString()
-                );
+                return allowedValues.stream()
+                        .anyMatch(v -> v.equalsIgnoreCase(actualValue));
 
             default:
                 return false;

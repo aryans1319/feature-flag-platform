@@ -10,14 +10,18 @@ import com.aryan.featureflags.model.Rule;
 import com.aryan.featureflags.repository.FeatureRepository;
 import com.aryan.featureflags.repository.RuleRepository;
 import com.aryan.featureflags.service.FeatureEvaluationService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
 
 @Service
-public class FeatureEvaluationServiceImpl
-        implements FeatureEvaluationService {
+public class FeatureEvaluationServiceImpl implements FeatureEvaluationService {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(FeatureEvaluationServiceImpl.class);
 
     private final FeatureRepository featureRepository;
     private final RuleRepository ruleRepository;
@@ -42,6 +46,9 @@ public class FeatureEvaluationServiceImpl
             Environment environment,
             EvaluationContextDto context) {
 
+        // 🔍 LOG 1: What is being evaluated
+        log.error(">>> LOOKUP KEY='{}', ENV='{}'", featureKey, environment);
+
         Feature feature = featureRepository
                 .findByKeyAndEnvironment(featureKey, environment)
                 .orElseThrow(() ->
@@ -49,8 +56,19 @@ public class FeatureEvaluationServiceImpl
                                 "Feature not found: " + featureKey
                         ));
 
+        // 🔍 LOG 2: Feature found
+        log.error(
+                ">>> FEATURE FOUND: id={}, key={}, env={}, enabled={}, rollout={}",
+                feature.getId(),
+                feature.getKey(),
+                feature.getEnvironment(),
+                feature.isEnabled(),
+                feature.getRolloutPercentage()
+        );
+
         /* 1️⃣ Global toggle */
         if (!feature.isEnabled()) {
+            log.error(">>> FEATURE DISABLED");
             return false;
         }
 
@@ -62,9 +80,8 @@ public class FeatureEvaluationServiceImpl
 
         if (rollout != null && rollout < 100) {
 
-            if (attributes == null
-                    || !attributes.containsKey("userId")) {
-                // Cannot evaluate rollout without stable identifier
+            if (attributes == null || !attributes.containsKey("userId")) {
+                log.error(">>> ROLLOUT BLOCKED: missing userId");
                 return false;
             }
 
@@ -72,6 +89,9 @@ public class FeatureEvaluationServiceImpl
 
             boolean inRollout =
                     rolloutEvaluator.isUserInRollout(userId, rollout);
+
+            log.error(">>> ROLLOUT CHECK: userId={}, inRollout={}",
+                    userId, inRollout);
 
             if (!inRollout) {
                 return false;
@@ -81,16 +101,29 @@ public class FeatureEvaluationServiceImpl
         /* 3️⃣ Rule evaluation */
         List<Rule> rules = ruleRepository.findByFeature(feature);
 
+        log.error(">>> RULE COUNT = {}", rules.size());
+
         if (rules.isEmpty()) {
+            log.error(">>> NO RULES → FEATURE ON");
             return true;
         }
 
         for (Rule rule : rules) {
-            if (ruleEvaluator.matches(rule, attributes)) {
+            boolean matched = ruleEvaluator.matches(rule, attributes);
+            log.error(
+                    ">>> RULE CHECK: attr={}, op={}, value={}, matched={}",
+                    rule.getAttribute(),
+                    rule.getOperator(),
+                    rule.getValue(),
+                    matched
+            );
+
+            if (matched) {
                 return true;
             }
         }
 
+        log.error(">>> NO RULE MATCHED → FEATURE OFF");
         return false;
     }
 }

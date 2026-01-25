@@ -5,10 +5,6 @@ import com.aryan.featureflags.model.Environment;
 public class FeatureResponseDto {
     private final String key;
     private final boolean enabled;
-
-
-
-
     private Integer rollOutPercentage;
     private Environment environment;
 

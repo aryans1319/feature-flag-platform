@@ -100,7 +100,7 @@ public class RuleServiceImpl implements RuleService {
                         ));
         if(!rule.getFeature().getId().equals(feature.getId())){
             throw new FeatureNotFoundException(
-                    "Rule doesnt belong to feature: " + featureKey
+                    "Rule doesn't belong to feature: " + featureKey
             );
         }
         ruleRepository.delete(rule);

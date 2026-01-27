@@ -46,6 +46,7 @@ public class Feature {
         this.enabled = enabled;
     }
 
+
     @PrePersist
     public void onCreate() {
         Instant now = Instant.now();

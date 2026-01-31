@@ -5,6 +5,8 @@ import com.aryan.featureflags.dto.FeatureResponseDto;
 import com.aryan.featureflags.dto.UpdateRolloutRequestDto;
 import com.aryan.featureflags.engine.RuleEvaluator;
 import com.aryan.featureflags.engine.RolloutEvaluator;
+import com.aryan.featureflags.dto.EvaluationDecisionDto;
+import com.aryan.featureflags.evaluation.EvaluationDecision;
 import com.aryan.featureflags.exception.FeatureNotFoundException;
 import com.aryan.featureflags.model.Environment;
 import com.aryan.featureflags.model.Feature;
@@ -47,8 +49,7 @@ public class FeatureEvaluationServiceImpl implements FeatureEvaluationService {
             Environment environment,
             EvaluationContextDto context) {
 
-        // 🔍 LOG 1: What is being evaluated
-        log.error(">>> LOOKUP KEY='{}', ENV='{}'", featureKey, environment);
+        log.info(">>> LOOKUP KEY='{}', ENV='{}'", featureKey, environment);
 
         Feature feature = featureRepository
                 .findByKeyAndEnvironment(featureKey, environment)
@@ -56,9 +57,7 @@ public class FeatureEvaluationServiceImpl implements FeatureEvaluationService {
                         new FeatureNotFoundException(
                                 "Feature not found: " + featureKey
                         ));
-
-        // 🔍 LOG 2: Feature found
-        log.error(
+        log.info(
                 ">>> FEATURE FOUND: id={}, key={}, env={}, enabled={}, rollout={}",
                 feature.getId(),
                 feature.getKey(),
@@ -69,7 +68,7 @@ public class FeatureEvaluationServiceImpl implements FeatureEvaluationService {
 
         /* 1️⃣ Global toggle */
         if (!feature.isEnabled()) {
-            log.error(">>> FEATURE DISABLED");
+            log.info(">>> FEATURE DISABLED");
             return false;
         }
 
@@ -82,7 +81,7 @@ public class FeatureEvaluationServiceImpl implements FeatureEvaluationService {
         if (rollout != null && rollout < 100) {
 
             if (attributes == null || !attributes.containsKey("userId")) {
-                log.error(">>> ROLLOUT BLOCKED: missing userId");
+                log.info(">>> ROLLOUT BLOCKED: missing userId");
                 return false;
             }
 
@@ -91,7 +90,7 @@ public class FeatureEvaluationServiceImpl implements FeatureEvaluationService {
             boolean inRollout =
                     rolloutEvaluator.isUserInRollout(userId, rollout);
 
-            log.error(">>> ROLLOUT CHECK: userId={}, inRollout={}",
+            log.info(">>> ROLLOUT CHECK: userId={}, inRollout={}",
                     userId, inRollout);
 
             if (!inRollout) {
@@ -102,16 +101,16 @@ public class FeatureEvaluationServiceImpl implements FeatureEvaluationService {
         /* 3️⃣ Rule evaluation */
         List<Rule> rules = ruleRepository.findByFeature(feature);
 
-        log.error(">>> RULE COUNT = {}", rules.size());
+        log.info(">>> RULE COUNT = {}", rules.size());
 
         if (rules.isEmpty()) {
-            log.error(">>> NO RULES → FEATURE ON");
+            log.info(">>> NO RULES → FEATURE ON");
             return true;
         }
 
         for (Rule rule : rules) {
             boolean matched = ruleEvaluator.matches(rule, attributes);
-            log.error(
+            log.info(
                     ">>> RULE CHECK: attr={}, op={}, value={}, matched={}",
                     rule.getAttribute(),
                     rule.getOperator(),
@@ -124,7 +123,7 @@ public class FeatureEvaluationServiceImpl implements FeatureEvaluationService {
             }
         }
 
-        log.error(">>> NO RULE MATCHED → FEATURE OFF");
+        log.info(">>> NO RULE MATCHED → FEATURE OFF");
         return false;
     }
 
@@ -141,4 +140,101 @@ public class FeatureEvaluationServiceImpl implements FeatureEvaluationService {
 
         return null;
     }
+
+    @Override
+    public EvaluationDecision evaluateWithExplanation(
+            String featureKey,
+            Environment environment,
+            EvaluationContextDto context
+    ) {
+
+        Feature feature = featureRepository
+                .findByKeyAndEnvironment(featureKey, environment)
+                .orElseThrow(() ->
+                        new FeatureNotFoundException(
+                                "Feature not found: " + featureKey
+                        )
+                );
+
+        if (!feature.isEnabled()) {
+            return new EvaluationDecision(
+                    false,
+                    "FEATURE_DISABLED",
+                    List.of()
+            );
+        }
+
+        Map<String, Object> attributes =
+                context != null ? context.getAttributes() : null;
+
+        Integer rollout = feature.getRolloutPercentage();
+
+        if (rollout != null && rollout < 100) {
+
+            if (attributes == null || !attributes.containsKey("userId")) {
+                return new EvaluationDecision(
+                        false,
+                        "ROLLOUT_EXCLUDED",
+                        List.of()
+                );
+            }
+
+            String userId = attributes.get("userId").toString();
+
+            boolean inRollout =
+                    rolloutEvaluator.isUserInRollout(userId, rollout);
+
+            if (!inRollout) {
+                return new EvaluationDecision(
+                        false,
+                        "ROLLOUT_EXCLUDED",
+                        List.of(
+                                Map.of("rolloutPercentage", rollout)
+                        )
+                );
+            }
+        }
+
+        List<Rule> rules = ruleRepository.findByFeature(feature);
+
+        if (rules.isEmpty()) {
+            return new EvaluationDecision(
+                    true,
+                    "NO_RULES_DEFINED",
+                    List.of()
+            );
+        }
+
+        List<Map<String, Object>> matchedRules = new java.util.ArrayList<>();
+
+        for (Rule rule : rules) {
+            boolean matched = ruleEvaluator.matches(rule, attributes);
+
+            if (matched) {
+                matchedRules.add(
+                        Map.of(
+                                "attribute", rule.getAttribute(),
+                                "operator", rule.getOperator().name(),
+                                "value", rule.getValue()
+                        )
+                );
+            }
+        }
+
+        if (!matchedRules.isEmpty()) {
+            return new EvaluationDecision(
+                    true,
+                    "RULE_MATCHED",
+                    matchedRules
+            );
+        }
+
+        return new EvaluationDecision(
+                false,
+                "NO_RULE_MATCHED",
+                List.of()
+        );
+    }
+
+
 }

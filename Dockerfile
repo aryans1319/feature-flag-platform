@@ -1,13 +1,18 @@
-FROM eclipse-temurin:21-jdk
+# ---------- BUILD STAGE ----------
+FROM eclipse-temurin:21-jdk AS builder
 
-# Set working directory
+WORKDIR /build
+COPY . .
+RUN ./mvnw clean package -DskipTests
+
+# ---------- RUNTIME STAGE ----------
+FROM eclipse-temurin:21-jre
+
 WORKDIR /app
 
-# Copy jar
-COPY target/*.jar app.jar
+# Copy only jar (not source)
+COPY --from=builder /build/target/*.jar app.jar
 
-# Expose app port
 EXPOSE 8080
 
-# Run app
 ENTRYPOINT ["java", "-jar", "app.jar"]

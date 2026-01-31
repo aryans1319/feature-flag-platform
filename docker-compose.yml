@@ -10,6 +10,9 @@ services:
       POSTGRES_DB: featureflags
       POSTGRES_USER: featureflags_user
       POSTGRES_PASSWORD: featureflags_pass
+    command: >
+      postgres
+      -c max_connections=50
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped

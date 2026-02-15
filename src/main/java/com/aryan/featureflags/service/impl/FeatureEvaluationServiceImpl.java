@@ -5,7 +5,6 @@ import com.aryan.featureflags.dto.FeatureResponseDto;
 import com.aryan.featureflags.dto.UpdateRolloutRequestDto;
 import com.aryan.featureflags.engine.RuleEvaluator;
 import com.aryan.featureflags.engine.RolloutEvaluator;
-import com.aryan.featureflags.dto.EvaluationDecisionDto;
 import com.aryan.featureflags.evaluation.EvaluationDecision;
 import com.aryan.featureflags.exception.FeatureNotFoundException;
 import com.aryan.featureflags.model.Environment;
@@ -16,6 +15,7 @@ import com.aryan.featureflags.repository.RuleRepository;
 import com.aryan.featureflags.service.FeatureEvaluationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -31,16 +31,19 @@ public class FeatureEvaluationServiceImpl implements FeatureEvaluationService {
     private final RuleEvaluator ruleEvaluator;
     private final RolloutEvaluator rolloutEvaluator;
 
+    private final RedisTemplate<String,Object> redisTemplate;
+
     public FeatureEvaluationServiceImpl(
             FeatureRepository featureRepository,
             RuleRepository ruleRepository,
             RuleEvaluator ruleEvaluator,
-            RolloutEvaluator rolloutEvaluator) {
+            RolloutEvaluator rolloutEvaluator, RedisTemplate<String, Object> redisTemplate) {
 
         this.featureRepository = featureRepository;
         this.ruleRepository = ruleRepository;
         this.ruleEvaluator = ruleEvaluator;
         this.rolloutEvaluator = rolloutEvaluator;
+        this.redisTemplate = redisTemplate;
     }
 
     @Override
@@ -51,12 +54,33 @@ public class FeatureEvaluationServiceImpl implements FeatureEvaluationService {
 
         log.info(">>> LOOKUP KEY='{}', ENV='{}'", featureKey, environment);
 
+        String userID= null;
+        if(context!=null && context.getAttributes()!=null){
+            Object id= context.getAttributes().get("userId");
+            if(id!=null){
+                userID= id.toString();
+            }
+        }
+//        Build Cache Key
+        String cacheKey= "feature:" + featureKey + ":" +environment+
+                (userID!= null ? ":" +userID: "");
+
+        log.info(">>> CACHE KEY = {}", cacheKey);
+
+        String cachedValue = (String) redisTemplate.opsForValue().get(cacheKey);
+        if (cachedValue != null) {
+            log.info(">>> CACHE HIT → returning {}", cachedValue);
+            return Boolean.parseBoolean(cachedValue);
+        }
+
+
         Feature feature = featureRepository
                 .findByKeyAndEnvironment(featureKey, environment)
                 .orElseThrow(() ->
                         new FeatureNotFoundException(
                                 "Feature not found: " + featureKey
                         ));
+
         log.info(
                 ">>> FEATURE FOUND: id={}, key={}, env={}, enabled={}, rollout={}",
                 feature.getId(),
@@ -69,6 +93,7 @@ public class FeatureEvaluationServiceImpl implements FeatureEvaluationService {
         /* 1️⃣ Global toggle */
         if (!feature.isEnabled()) {
             log.info(">>> FEATURE DISABLED");
+            redisTemplate.opsForValue().set(cacheKey, String.valueOf(false));   //storing result in redis
             return false;
         }
 
@@ -105,6 +130,8 @@ public class FeatureEvaluationServiceImpl implements FeatureEvaluationService {
 
         if (rules.isEmpty()) {
             log.info(">>> NO RULES → FEATURE ON");
+            redisTemplate.opsForValue()
+                    .set(cacheKey, String.valueOf(true), java.time.Duration.ofMinutes(5));
             return true;
         }
 
@@ -119,11 +146,15 @@ public class FeatureEvaluationServiceImpl implements FeatureEvaluationService {
             );
 
             if (matched) {
+                redisTemplate.opsForValue()
+                        .set(cacheKey, String.valueOf(true),
+                                java.time.Duration.ofMinutes(5));
                 return true;
             }
         }
 
         log.info(">>> NO RULE MATCHED → FEATURE OFF");
+        redisTemplate.opsForValue().set(cacheKey, String.valueOf(false));
         return false;
     }
 
@@ -137,6 +168,9 @@ public class FeatureEvaluationServiceImpl implements FeatureEvaluationService {
         feature.setRolloutPercentage(request.getRollOutPercentage());
         Feature saved= featureRepository.save(feature);
 
+        String pattern = "feature:" + key + ":" + environment + "*";
+        redisTemplate.keys(pattern)
+                .forEach(redisTemplate::delete);
 
         return null;
     }
